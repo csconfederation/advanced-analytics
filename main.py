@@ -1,19 +1,17 @@
-from request_types.types import DivisionUnion
+import csv
 
 from generate_stats.base_stats import (
     get_match_info_by_team_for_tier,
     get_round_win_percentage_by_team,
     get_strength_of_schedule_by_team,
-    get_average_ratings_by_team,
+    get_win_loss_record_by_team,
 )
 from generate_stats.get_and_stitch_stats import get_stats
 from generate_stats.rwoa import get_rwoa_by_team
+from request_types.types import DivisionUnion
 
 stats = get_stats()
 
-
-def calculate_tier_stats(tier: DivisionUnion, rwoa_f):
-    # LeagueMatches allows us to calculate RWP, SOS, and RWOA
 def calculate_tier_stats(tier: DivisionUnion, csv_writer):
     league_matches = get_match_info_by_team_for_tier(tier)
     round_win_percents = get_round_win_percentage_by_team(league_matches)
@@ -50,7 +48,6 @@ tiers = [
     stats.Premier,
 ]
 
-with open(f"rwoa.csv", "w") as rwoa_f:
 with open(f"rwoa.csv", "w", newline='') as rwoa_f:
     csv_writer = csv.writer(rwoa_f)
     csv_writer.writerow(["Tier", "Team", "W", "L", "RD", "TWin", "CTWin", "RWOA Total", "T RWOA", "CT RWOA", "SOS"])
