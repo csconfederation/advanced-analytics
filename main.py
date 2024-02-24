@@ -21,8 +21,16 @@ def calculate_tier_stats(tier: DivisionUnion, csv_writer):
     team_rwoas = get_rwoa_by_team(league_matches, round_win_percents)
     win_loss_records = get_win_loss_record_by_team(league_matches)
 
+    # Sort team_rwoas by tier, then win desc, then RD desc
+    sorted_teams = sorted(team_rwoas.items(), key=lambda x: (
+        type(tier[0]).__name__, 
+        -win_loss_records[x[0]].wins, 
+        -win_loss_records[x[0]].total_round_difference
+    ))
+
+
     # Write RWOA and SOS to CSV file
-    for team, rwoa in team_rwoas.items():
+    for team, rwoa in sorted_teams:
         win_loss = win_loss_records[team]
         csv_writer.writerow([
             type(tier[0]).__name__,
