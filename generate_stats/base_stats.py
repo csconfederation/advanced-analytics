@@ -206,3 +206,39 @@ def get_average_ratings_by_team(matches: DivisionUnion) -> Dict[str, TeamAverage
         )
 
     return team_ratings
+from typing import Dict
+
+class TeamWinLossRecord(BaseModel):
+    wins: int
+    losses: int
+    total_round_difference: int
+
+def get_win_loss_record_by_team(league_matches: LeagueMatches) -> Dict[str, TeamWinLossRecord]:
+    """
+    Creates a dictionary that allows individual teams to surface their win/loss record and total round difference.
+    """
+    win_loss_records = {}
+
+    for team in league_matches.matches:
+        wins = 0
+        losses = 0
+        total_round_difference = 0
+
+        for opponent in league_matches.matches[team]:
+            my_score = league_matches.matches[team][opponent].score.my.total_rounds_won
+            opponent_score = league_matches.matches[team][opponent].score.opponent.total_rounds_won
+
+            if my_score > opponent_score:
+                wins += 1
+            else:
+                losses += 1
+
+            total_round_difference += (my_score - opponent_score)
+
+        win_loss_records[team] = TeamWinLossRecord(
+            wins=wins,
+            losses=losses,
+            total_round_difference=total_round_difference,
+        )
+
+    return win_loss_records
