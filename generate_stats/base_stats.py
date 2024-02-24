@@ -212,10 +212,13 @@ class TeamWinLossRecord(BaseModel):
     wins: int
     losses: int
     total_round_difference: int
+    t_side_win_rate: float
+    ct_side_win_rate: float
 
 def get_win_loss_record_by_team(league_matches: LeagueMatches) -> Dict[str, TeamWinLossRecord]:
     """
     Creates a dictionary that allows individual teams to surface their win/loss record and total round difference.
+    Now includes T and CT sided win rates.
     """
     win_loss_records = {}
 
@@ -223,10 +226,18 @@ def get_win_loss_record_by_team(league_matches: LeagueMatches) -> Dict[str, Team
         wins = 0
         losses = 0
         total_round_difference = 0
+        t_rounds_won = 0
+        ct_rounds_won = 0
+        t_rounds_played = 0
+        ct_rounds_played = 0
 
         for opponent in league_matches.matches[team]:
             my_score = league_matches.matches[team][opponent].score.my.total_rounds_won
             opponent_score = league_matches.matches[team][opponent].score.opponent.total_rounds_won
+            my_t_rounds_won = league_matches.matches[team][opponent].score.my.t_rounds_won
+            my_ct_rounds_won = league_matches.matches[team][opponent].score.my.ct_rounds_won
+            opponent_t_rounds_won = league_matches.matches[team][opponent].score.opponent.t_rounds_won
+            opponent_ct_rounds_won = league_matches.matches[team][opponent].score.opponent.ct_rounds_won
 
             if my_score > opponent_score:
                 wins += 1
@@ -234,11 +245,17 @@ def get_win_loss_record_by_team(league_matches: LeagueMatches) -> Dict[str, Team
                 losses += 1
 
             total_round_difference += (my_score - opponent_score)
+            t_rounds_won += my_t_rounds_won
+            ct_rounds_won += my_ct_rounds_won
+            t_rounds_played += my_t_rounds_won + opponent_ct_rounds_won
+            ct_rounds_played += my_ct_rounds_won + opponent_t_rounds_won
 
         win_loss_records[team] = TeamWinLossRecord(
             wins=wins,
             losses=losses,
             total_round_difference=total_round_difference,
+            t_side_win_rate=t_rounds_won / t_rounds_played if t_rounds_played > 0 else 0,
+            ct_side_win_rate=ct_rounds_won / ct_rounds_played if ct_rounds_played > 0 else 0,
         )
 
     return win_loss_records
