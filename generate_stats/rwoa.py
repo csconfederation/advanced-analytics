@@ -3,110 +3,52 @@ from statistics import mean
 from request_types.types import *
 
 
-def get_rwoa_by_team(
-    league_matches: LeagueMatches, round_win_percentage: TeamRoundWinPercentages
-):
-    rwoa = {}
+def get_rwoa_by_team(league_matches: LeagueMatches, team_round_win_percentage: TeamRoundWinPercentages):
+    team_rwoa = {}
 
-    for team in league_matches.matches:
-        total_opponent_rounds_won = 0
-        total_opponent_rounds_played = 0
-        total_t_opponent_rounds_won = 0
-        total_t_opponent_rounds_played = 0
-        total_ct_opponent_rounds_won = 0
-        total_ct_opponent_rounds_played = 0
-        total_won_bias = 0
-        total_played_bias = 0
-        total_t_won_bias = 0
-        total_t_played_bias = 0
-        total_ct_won_bias = 0
-        total_ct_played_bias = 0
+    for team_name, matches in league_matches.matches.items():
+        rwoa_values = {'total': [], 't': [], 'ct': []}
 
-        total_rwoa = []
-        total_t_rwoa = []
-        total_ct_rwoa = []
+        for opponent_name, match_detail in matches.items():
+            biases = {
+                'won': match_detail.score.opponent.total_rounds_won,
+                'played': match_detail.score.opponent.total_rounds_won + match_detail.score.my.total_rounds_won,
+                't_won': match_detail.score.opponent.t_rounds_won,
+                't_played': match_detail.score.opponent.t_rounds_won + match_detail.score.my.ct_rounds_won,
+                'ct_won': match_detail.score.opponent.ct_rounds_won,
+                'ct_played': match_detail.score.opponent.ct_rounds_won + match_detail.score.my.t_rounds_won,
+            }
 
-        for opponent in league_matches.matches[team]:
-            won_bias = league_matches.matches[team][
-                opponent
-            ].score.opponent.total_rounds_won
-            t_won_bias = league_matches.matches[team][
-                opponent
-            ].score.opponent.t_rounds_won
-            ct_won_bias = league_matches.matches[team][
-                opponent
-            ].score.opponent.ct_rounds_won
-            played_bias = (
-                league_matches.matches[team][opponent].score.opponent.total_rounds_won
-                + league_matches.matches[team][opponent].score.my.total_rounds_won
-            )
-            t_played_bias = (
-                league_matches.matches[team][opponent].score.opponent.t_rounds_won
-                + league_matches.matches[team][opponent].score.my.ct_rounds_won
-            )
-            ct_played_bias = (
-                league_matches.matches[team][opponent].score.opponent.ct_rounds_won
-                + league_matches.matches[team][opponent].score.my.t_rounds_won
-            )
-            total_won_bias += won_bias
-            total_played_bias += played_bias
-            total_t_won_bias += t_won_bias
-            total_t_played_bias += t_played_bias
-            total_ct_won_bias += ct_won_bias
-            total_ct_played_bias += ct_played_bias
+            opponent_stats = team_round_win_percentage[opponent_name]
+            opponent_biases_removed = {
+                'rounds_won': opponent_stats.rounds_won - biases['won'],
+                'rounds_played': opponent_stats.rounds_played - biases['played'],
+                't_rounds_won': opponent_stats.t_rounds_won - biases['t_won'],
+                't_rounds_played': opponent_stats.t_rounds_played - biases['t_played'],
+                'ct_rounds_won': opponent_stats.ct_rounds_won - biases['ct_won'],
+                'ct_rounds_played': opponent_stats.ct_rounds_played - biases['ct_played'],
+            }
 
-            opponent_rounds_won = round_win_percentage[opponent].rounds_won - won_bias
-            opponent_rounds_played = (
-                round_win_percentage[opponent].rounds_played - played_bias
-            )
-            t_opponent_rounds_won = (
-                round_win_percentage[opponent].t_rounds_won - t_won_bias
-            )
-            t_opponent_rounds_played = (
-                round_win_percentage[opponent].t_rounds_played - t_played_bias
-            )
-            ct_opponent_rounds_won = (
-                round_win_percentage[opponent].ct_rounds_won - ct_won_bias
-            )
-            ct_opponent_rounds_played = (
-                round_win_percentage[opponent].ct_rounds_played - ct_played_bias
-            )
+            rwp = {
+                'total': biases['won'] / biases['played'] if biases['played'] else 0,
+                't': biases['t_won'] / biases['t_played'] if biases['t_played'] else 0,
+                'ct': biases['ct_won'] / biases['ct_played'] if biases['ct_played'] else 0,
+            }
 
-            total_opponent_rounds_won += opponent_rounds_won
-            total_opponent_rounds_played += opponent_rounds_played
-            total_t_opponent_rounds_won += t_opponent_rounds_won
-            total_t_opponent_rounds_played += t_opponent_rounds_played
-            total_ct_opponent_rounds_won += ct_opponent_rounds_won
-            total_ct_opponent_rounds_played += ct_opponent_rounds_played
+            opponent_rwp = {
+                'total': opponent_biases_removed['rounds_won'] / opponent_biases_removed['rounds_played'] if opponent_biases_removed['rounds_played'] else 0,
+                't': opponent_biases_removed['t_rounds_won'] / opponent_biases_removed['t_rounds_played'] if opponent_biases_removed['t_rounds_played'] else 0,
+                'ct': opponent_biases_removed['ct_rounds_won'] / opponent_biases_removed['ct_rounds_played'] if opponent_biases_removed['ct_rounds_played'] else 0,
+            }
 
-            opponent_rwp = (
-                opponent_rounds_won / opponent_rounds_played
-                if opponent_rounds_played != 0
-                else 0
-            )
-            t_opponent_rwp = (
-                t_opponent_rounds_won / t_opponent_rounds_played
-                if t_opponent_rounds_played != 0
-                else 0
-            )
-            ct_opponent_rwp = (
-                ct_opponent_rounds_won / ct_opponent_rounds_played
-                if ct_opponent_rounds_played != 0
-                else 0
-            )
+            for key in ['total', 't', 'ct']:
+                rwoa_value = (1 - rwp[key]) / (1 - opponent_rwp[key]) if opponent_rwp[key] != 1 else 0
+                rwoa_values[key].append(rwoa_value)
 
-            rwp = won_bias / played_bias if played_bias != 0 else 0
-            t_rwp = t_won_bias / t_played_bias if t_played_bias != 0 else 0
-            ct_rwp = ct_won_bias / ct_played_bias if ct_played_bias != 0 else 0
-
-            total_rwoa.append((1 - rwp) / (1 - opponent_rwp))
-            total_t_rwoa.append((1 - t_rwp) / (1 - t_opponent_rwp))
-            total_ct_rwoa.append((1 - ct_rwp) / (1 - ct_opponent_rwp))
-
-        rwoa[team] = RWOA(
-            total=mean(total_rwoa),
-            t=mean(total_ct_rwoa),
-            ct=mean(total_t_rwoa),
+        team_rwoa[team_name] = RWOA(
+            total=mean(rwoa_values['total']),
+            ct=mean(rwoa_values['t']),
+            t=mean(rwoa_values['ct']),
         )
 
-    return rwoa
+    return team_rwoa

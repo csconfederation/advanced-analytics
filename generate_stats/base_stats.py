@@ -142,7 +142,7 @@ def get_strength_of_schedule_by_team(
         strength_of_schedule[team] = TeamStrengthOfSchedule(
             opponent_rounds_won=total_opponent_rounds_won,
             opponent_rounds_played=total_opponent_rounds_played,
-            percentage=total_opponent_rounds_won / total_opponent_rounds_played,
+            percentage=round((total_opponent_rounds_won / total_opponent_rounds_played) * 100, 2),
         )
 
     return strength_of_schedule
