@@ -43,17 +43,17 @@ def calculate_tier_stats(tier: DivisionUnion, csv_writer):
             f"{round((rwoa.total - 1) * 100, 2)}%",
             f"{round((rwoa.t - 1) * 100, 2)}%",
             f"{round((rwoa.ct - 1) * 100, 2)}%",
-            strength_of_schedule[team].percentage,
+            f"{strength_of_schedule[team].percentage}%",
         ])
 
 
 tiers = [
-    stats.Recruit,
-    stats.Prospect,
-    stats.Contender,
     stats.Challenger,
+    stats.Contender,
     stats.Elite,
     stats.Premier,
+    stats.Prospect,
+    stats.Recruit,
 ]
 
 with open(f"rwoa.csv", "w", newline='') as rwoa_f:
