@@ -1,3 +1,4 @@
+import argparse
 import csv
 
 from generate_stats.base_stats import (
@@ -10,7 +11,12 @@ from generate_stats.get_and_stitch_stats import get_stats
 from generate_stats.rwoa import get_rwoa_by_team
 from request_types.types import DivisionUnion
 
-stats = get_stats()
+parser = argparse.ArgumentParser()
+parser.add_argument("season", type=int, help="The season number to generate stats for")
+args = parser.parse_args()
+
+stats = get_stats(args.season)
+
 
 def calculate_tier_stats(tier: DivisionUnion, csv_writer):
     league_matches = get_match_info_by_team_for_tier(tier)
@@ -22,29 +28,33 @@ def calculate_tier_stats(tier: DivisionUnion, csv_writer):
     win_loss_records = get_win_loss_record_by_team(league_matches)
 
     # Sort team_rwoas by tier, then win desc, then RD desc
-    sorted_teams = sorted(team_rwoas.items(), key=lambda x: (
-        type(tier[0]).__name__, 
-        -win_loss_records[x[0]].wins, 
-        -win_loss_records[x[0]].total_round_difference
-    ))
-
+    sorted_teams = sorted(
+        team_rwoas.items(),
+        key=lambda x: (
+            type(tier[0]).__name__,
+            -win_loss_records[x[0]].wins,
+            -win_loss_records[x[0]].total_round_difference,
+        ),
+    )
 
     # Write RWOA and SOS to CSV file
     for team, rwoa in sorted_teams:
         win_loss = win_loss_records[team]
-        csv_writer.writerow([
-            type(tier[0]).__name__,
-            team,
-            win_loss.wins,
-            win_loss.losses,
-            win_loss.total_round_difference,
-            f"{round(win_loss.t_side_win_rate * 100, 2)}%",
-            f"{round(win_loss.ct_side_win_rate * 100, 2)}%",
-            f"{round((rwoa.total - 1) * 100, 2)}%",
-            f"{round((rwoa.t - 1) * 100, 2)}%",
-            f"{round((rwoa.ct - 1) * 100, 2)}%",
-            f"{strength_of_schedule[team].percentage}%",
-        ])
+        csv_writer.writerow(
+            [
+                type(tier[0]).__name__,
+                team,
+                win_loss.wins,
+                win_loss.losses,
+                win_loss.total_round_difference,
+                f"{round(win_loss.t_side_win_rate * 100, 2)}%",
+                f"{round(win_loss.ct_side_win_rate * 100, 2)}%",
+                f"{round((rwoa.total - 1) * 100, 2)}%",
+                f"{round((rwoa.t - 1) * 100, 2)}%",
+                f"{round((rwoa.ct - 1) * 100, 2)}%",
+                f"{strength_of_schedule[team].percentage}%",
+            ]
+        )
 
 
 tiers = [
@@ -56,8 +66,22 @@ tiers = [
     stats.Recruit,
 ]
 
-with open(f"rwoa.csv", "w", newline='') as rwoa_f:
+with open(f"rwoa.csv", "w", newline="") as rwoa_f:
     csv_writer = csv.writer(rwoa_f)
-    csv_writer.writerow(["Tier", "Team", "W", "L", "RD", "TWin", "CTWin", "RWOA Total", "T RWOA", "CT RWOA", "SOS"])
+    csv_writer.writerow(
+        [
+            "Tier",
+            "Team",
+            "W",
+            "L",
+            "RD",
+            "TWin",
+            "CTWin",
+            "RWOA Total",
+            "T RWOA",
+            "CT RWOA",
+            "SOS",
+        ]
+    )
     for tier in tiers:
         calculate_tier_stats(tier, csv_writer)

@@ -4,15 +4,15 @@ from collections import Counter
 from request_types.types import StitchedStats
 
 
-def get_stats() -> StitchedStats:
+def get_stats(season: int) -> StitchedStats:
     # URL and payload for the first GraphQL query
     url1 = "https://stats.csconfederation.com/graphql"
     query1 = {
-        "query": """
-      {
+        "query": f"""
+      {{
         findManyPlayerMatchStats(
-          where: {match: {season: {equals: 13}, matchType: {equals: Regulation}}, side: {equals: 4}}
-        ) {
+          where: {{match: {{season: {{equals: {season}}}, matchType: {{equals: Regulation}}}}, side: {{equals: 4}}}}
+        ) {{
           name
           steamID
           rating
@@ -20,54 +20,54 @@ def get_stats() -> StitchedStats:
           ctRating
           teamClanName
           rounds
-          match {
+          match {{
             tier
             matchId
             mapName
-            rounds {
+            rounds {{
               winnerENUM
               winnerClanName
-            }
-          }
-        }
-      }
+            }}
+          }}
+        }}
+      }}
       """
     }
 
     # URL and payload for the second GraphQL query
     url2 = "https://core.csconfederation.com/graphql"
     query2 = {
-        "query": """
-      {
-          matches(season: 13) {
+        "query": f"""
+      {{
+          matches(season: {season}) {{
               id
               completedAt
-              stats {
+              stats {{
                   homeScore
                   awayScore
-                  winner {
+                  winner {{
                       name
-                  }
-              }
-              matchDay {
+                  }}
+              }}
+              matchDay {{
                   number
-              }
-              home {
+              }}
+              home {{
                   name
-                  players {
+                  players {{
                       name
                       type
-                  }
-              }
-              away {
+                  }}
+              }}
+              away {{
                   name
-                  players {
+                  players {{
                       name
                       type
-                  }
-              }
-          }
-      }
+                  }}
+              }}
+          }}
+      }}
       """
     }
 
@@ -83,6 +83,18 @@ def get_stats() -> StitchedStats:
     # Perform both queries
     player_match_stats_data = perform_query(url1, query1)
     matches_data = perform_query(url2, query2)
+
+    if (
+        not isinstance(player_match_stats_data, dict)
+        or "data" not in player_match_stats_data
+    ):
+        raise ValueError(
+            f"Failed to fetch or parse player match stats. Response: {player_match_stats_data}"
+        )
+    if not isinstance(matches_data, dict) or "data" not in matches_data:
+        raise ValueError(
+            f"Failed to fetch or parse matches data. Response: {matches_data}"
+        )
 
     def add_player_match_stats_to_matches(matches, player_match_stats):
         """

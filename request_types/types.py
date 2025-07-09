@@ -1,5 +1,5 @@
-from typing import Dict, List
-from pydantic import BaseModel, validator
+from typing import Dict, List, Optional, Any
+from pydantic import BaseModel, field_validator
 from typing import Union, List
 
 
@@ -10,11 +10,18 @@ class Winner(BaseModel):
 class Stat(BaseModel):
     homeScore: int
     awayScore: int
-    winner: Winner
+    winner: Optional[Winner]
 
 
 class MatchDay(BaseModel):
-    number: str
+    number: int
+
+    @field_validator("number", mode="before")
+    @classmethod
+    def parse_match_day_number(cls, v: Any):
+        if isinstance(v, str):
+            return int(v.lstrip("M"))
+        return v
 
 
 class Player(BaseModel):
